@@ -10,6 +10,7 @@ class Player():
       self._hand = []
       self._id = id
 
+
    def __str__(self):
       output = str.format("Player{} [", self._id)
       for card in self._hand:
@@ -17,34 +18,37 @@ class Player():
       output= output[0:-2] + "]"
       return output
 
+
    def hand(self):
       return self._hand
+
 
    def receiveCard(self, cardFact):
       self._hand.append(cardFact)
 
+
    def dropCard(self, cardFact):
       self._hand.remove(cardFact)
-      removePossibility(cardFact.card())
+      self.removePossibility(cardFact.card()) # You can look at it now.
+
 
    def removePossibility(self, card):
       for cardFact in self._hand:
          cardFact.removePossibility(card)
 
 
-   def GetActionForTurn(self, simulationDepth):
-
+   def GetActionForTurn(self, simulationMetadata):
       #TODO: Reconsider Plays and Burns if hints are better.
       safePlayFact = self.getSafePlay()
       if safePlayFact:
-         return Play(safePlayFact)
+         return Play(safePlayFact, self)
       
       safeBurnFact = self.getSafeBurn()
       if safeBurnFact:
-         return Burn(safeBurnFact)
+         return Burn(safeBurnFact, self)
 
       if self._game.hintTokens() > 0:
-         return self.calculateBestHint(simulationDepth)
+         return self.calculateBestHint(simulationMetadata)
 
       # No more Hint tokens. Guessing time!
       return self.Yolo()
@@ -53,8 +57,10 @@ class Player():
    def getSafePlay(self):
       for cardFact in self._hand:
          if cardFact.shouldPlay():
-            # TODO: Double check, someone might have finished the suit or number.
-            return cardFact
+            if cardFact.verifyPlayable(self._game.allProgress()):
+               return cardFact
+            else:
+               cardFact.setShouldBurn()
 
       return None
 
@@ -62,27 +68,35 @@ class Player():
    def getSafeBurn(self):
       for cardFact in self._hand:
          if cardFact.shouldBurn():
-            return cardFact
+            return cardFact # should double check this?
 
       return None
 
 
    def getCards(self):
-      if self._game.currentPlayer() == self:
-         return []
       cards = []
       for cardFact in self._hand:
          cards.append(cardFact.card())
       return cards
 
 
-   def calculateBestHint(self, simulationDepth):
+   def calculateBestHint(self, simulationMetadata):
       bestScore = 0
       bestHint = None
-      for otherPlayer in self._game.playersExcept(self):
+      for otherPlayer in self._game.players():
+         if otherPlayer == self or otherPlayer == simulationMetadata.initialPlayer:
+            continue
+
          validHints = otherPlayer.getValidHints()
          for hint in validHints:
-            score = self._game.simulate(hint, simulationDepth)
+
+            if simulationMetadata.depth <= 0:
+               print str.format("{}Player {} At depth {}. \t Considering {} \t for player{}", \
+                  "  "*simulationMetadata.depth, self._id, simulationMetadata.depth, hint, otherPlayer._id)
+            score = self._game.simulate(hint, simulationMetadata)
+            if simulationMetadata.depth <= 0:
+               print str.format("{}Score: {}", "  "*simulationMetadata.depth, score)
+
             if score > bestScore:
                bestScore = score
                bestHint = hint
@@ -90,6 +104,8 @@ class Player():
 
 
    def getValidHints(self):
+      #TODO: Make sure you don't double-hint.
+
       numbers = set([])
       suits = set([])
       hints = []
@@ -107,8 +123,6 @@ class Player():
 
 
    def receiveHint(self, hint):
-      print "Receving " + str(hint)
-
       relevantCardFacts = []
       for cardFact in self._hand:
          # We let the cardFact determine if it applies. This is a little weird since in real life
@@ -125,11 +139,34 @@ class Player():
 
    # Add context clues that cannot be determined from the game state on the player's turn.
    def contemplateNumberHint(self, number, relevantCardFacts):
-      pass
+      playableSlots = 0
+      futureSlots = 0
+      for suit in SUITS:
+         currentProgress = self._game.progress(suit)
+         if currentProgress == number - 1:
+            playableSlots += 1
+         elif currentProgress < number:
+            futureSlots += 1
+
+      if playableSlots >= len(relevantCardFacts):
+         for cardFact in relevantCardFacts:
+            cardFact.setShouldPlay()
+
+      elif futureSlots <= len(relevantCardFacts):
+         for cardFact in relevantCardFacts:
+            cardFact.setShouldBurn()
+
 
    # Add context clues that cannot be determined from the game state on the player's turn.
    def contemplateSuitHint(self, suit, relevantCardFacts):
-      pass
+      remainingCardsForSuit = len(NUMBERS) - self._game.progress(suit)
+      if remainingCardsForSuit < len(relevantCardFacts):
+         for cardFact in relevantCardFacts:
+            cardFact.setShouldBurn()
+
+      elif len(relevantCardFacts) == 1:
+         relevantCardFacts[0].setShouldPlay()
+
 
    def Yolo(self):
       print "I don't know how to yolo"

@@ -4,7 +4,7 @@ from CardDrawManager import *
 from GameState import *
 
 InitialDrawCount = 4
-InitialHintTokens = 7
+InitialHintTokens = 8
 InitialDeathTokens = 3
 
 progressValues = [0, 50, 95, 130, 155, 170]
@@ -48,15 +48,15 @@ class Game():
 
    def play(self):
       #TODO: This should be a loop.
-      self.playSingleTurn(0)
+      simulationMetadata = SimulationMetadata(self._players[self._currentPlayerIndex])
+      self.playSingleTurn(simulationMetadata)
 
-   def playSingleTurn(self, simulationDepth):
-      action = self._players[self._currentPlayerIndex].GetActionForTurn(simulationDepth)
+   def playSingleTurn(self, simulationMetadata):
+      action = self._players[self._currentPlayerIndex].GetActionForTurn(simulationMetadata)
       self.processAction(action)
 
    def processAction(self, action):
-      actionName = action.actionName()
-      if actionName == "Hint":
+      if action.actionName() == "Hint":
          self.processHint(action)
       else:
          self.processBurnOrPlay(action)
@@ -66,13 +66,14 @@ class Game():
       self._hintTokens -= 1
 
    def processBurnOrPlay(self, action):
-      player = action.player
-      card = action.cardFact.card()
-      player.dropCard(card)
+      player = action.player()
+      cardFact = action.cardFact()
+      player.dropCard(cardFact)
 
-      if actionName == "Burn":
+      if action.actionName() == "Burn":
          self._hintTokens += 1
       else: # Play:
+         card = cardFact.card()
          suit = card.suit()
          number = card.number()
          if self.progress(suit) == number - 1:
@@ -80,45 +81,44 @@ class Game():
          else:
             self.deathTokens -= 1 # :(
 
-      cardDrawManager.handleDrawFor(player)
+      self._cardDrawManager.handleDrawFor(player)
 
-   def simulate(self, action, simulationDepth):
-      atMaxDepth = (simulationDepth >= self._maxSimulationDepth)
+   def simulate(self, action, simulationMetadata):
+      originalDepth = simulationMetadata.depth
+      atMaxDepth = (originalDepth >= self._maxSimulationDepth)
       gameState = GameState(self)
       self.processAction(action)
 
       if not atMaxDepth:
          self.iteratePlayerIndex()
-         self.playSingleTurn(simulationDepth)
+         self.playSingleTurn(simulationMetadata.increment())
 
       score = self.score()
       self.setState(gameState)
+      simulationMetadata.depth = originalDepth
       return score
 
    def setState(self, state):
-      self._players = state.players
       self._deck = state.deck
       self._progress = state.progress
       self._hintTokens = state.hintTokens
       self._deathTokens = state.deathTokens
       self._currentPlayerIndex = state.currentPlayerIndex
+      for i, player in enumerate(self._players):
+         player._hand = state.hands[i]
 
 
-   def progress(self, suite):
+   def progress(self, suit):
       return self._progress[suit]
+
+   def allProgress(self):
+      return self._progress
 
    def currentPlayer(self):
       return self._players[self._currentPlayerIndex]
 
    def players(self):
       return self._players
-
-   def playersExcept(self, exceptedPlayer):
-      players = []
-      for player in self._players:
-         if player is not exceptedPlayer:
-            players.append(player)
-      return players
 
    def hintTokens(self):
       return self._hintTokens
@@ -136,3 +136,12 @@ class Game():
       score += deathTokenValues[self._deathTokens]
 
       return score
+
+class SimulationMetadata:
+   def __init__(self, initialPlayer):
+      self.initialPlayer = initialPlayer
+      self.depth = 0
+
+   def increment(self):
+      self.depth += 1
+      return self

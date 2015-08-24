@@ -1,4 +1,4 @@
-SUITS = ["blue", "green", "red", "yellow", "orange"]
+SUITS = ["B", "G", "R", "Y", "W"]
 NUMBERS = range(1, 6)
 CARD_COUNTS = [3, 2, 2, 2, 1]
 

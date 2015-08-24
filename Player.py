@@ -1,6 +1,5 @@
 from CardFact import *
 from Action import *
-from Hint import *
 
 import copy
 
@@ -24,11 +23,16 @@ class Player():
    def receiveCard(self, cardFact):
       self._hand.append(cardFact)
 
+   def dropCard(self, cardFact):
+      self._hand.remove(cardFact)
+      removePossibility(cardFact.card())
+
    def removePossibility(self, card):
       for cardFact in self._hand:
          cardFact.removePossibility(card)
 
-   def GetActionForTurn(self):
+
+   def GetActionForTurn(self, simulationDepth):
 
       #TODO: Reconsider Plays and Burns if hints are better.
       safePlayFact = self.getSafePlay()
@@ -39,12 +43,12 @@ class Player():
       if safeBurnFact:
          return Burn(safeBurnFact)
 
-      bestHint = self.calculateBestHint()
-      if bestHint:
-         return bestHint
+      if self._game.hintTokens() > 0:
+         return self.calculateBestHint(simulationDepth)
 
       # No more Hint tokens. Guessing time!
       return self.Yolo()
+
 
    def getSafePlay(self):
       for cardFact in self._hand:
@@ -54,6 +58,7 @@ class Player():
 
       return None
 
+
    def getSafeBurn(self):
       for cardFact in self._hand:
          if cardFact.shouldBurn():
@@ -61,8 +66,6 @@ class Player():
 
       return None
 
-   def calculateBestHint(self):
-      return None
 
    def getCards(self):
       if self._game.currentPlayer() == self:
@@ -73,6 +76,19 @@ class Player():
       return cards
 
 
+   def calculateBestHint(self, simulationDepth):
+      bestScore = 0
+      bestHint = None
+      for otherPlayer in self._game.playersExcept(self):
+         validHints = otherPlayer.getValidHints()
+         for hint in validHints:
+            score = self._game.simulate(hint, simulationDepth)
+            if score > bestScore:
+               bestScore = score
+               bestHint = hint
+      return bestHint
+
+
    def getValidHints(self):
       numbers = set([])
       suits = set([])
@@ -81,20 +97,20 @@ class Player():
          number = card.number()
          if number not in numbers:
             numbers.add(number)
-            hints.append(Hint(True, number))
+            hints.append(Hint(True, number, self))
 
          suit = card.suit()
          if suit not in suits:
             suits.add(suit)
-            hints.append(Hint(False, suit))
+            hints.append(Hint(False, suit, self))
       return hints
 
 
    def receiveHint(self, hint):
-      oldHand = copy.deepcopy(self._hand)
+      print "Receving " + str(hint)
 
       relevantCardFacts = []
-      for cardFact in self._hand():
+      for cardFact in self._hand:
          # We let the cardFact determine if it applies. This is a little weird since in real life
          # the hinting player would point out which cards it applies to, but this is cleaner.
          cardFact.processHint(hint)
@@ -103,11 +119,9 @@ class Player():
             relevantCardFacts.append(cardFact)
 
       if hint.isNumber():
-         contemplateNumberHint(hint.value(), relevantCardFacts)
+         self.contemplateNumberHint(hint.value(), relevantCardFacts)
       else:
-         contemplateSuitHint(hint.value(), relevantCardFacts)
-
-      return oldHand
+         self.contemplateSuitHint(hint.value(), relevantCardFacts)
 
    # Add context clues that cannot be determined from the game state on the player's turn.
    def contemplateNumberHint(self, number, relevantCardFacts):
@@ -115,10 +129,6 @@ class Player():
 
    # Add context clues that cannot be determined from the game state on the player's turn.
    def contemplateSuitHint(self, suit, relevantCardFacts):
-      # progress = self._game.progress(suit)
-      
-      # if len(relevantCardFacts) == 1:
-      #    fact = relevantCardFacts[0]
       pass
 
    def Yolo(self):

@@ -6,6 +6,9 @@ class Simulation:
       self.initialPlayer = initialPlayer
       self._depth = 0
 
+   def isSimulating(self):
+      return self._depth == 0
+
    def simulate(self, actions):
 
       bestScore = -9999
@@ -29,7 +32,7 @@ class Simulation:
    def executeTopAction(self, action):
       game = self._game
       gameState = GameState(game)
-      game.processAction(action)
+      game.processAction(action, True)
 
       atMaxDepth = (self._depth >= game._maxSimulationDepth)
       if not atMaxDepth:

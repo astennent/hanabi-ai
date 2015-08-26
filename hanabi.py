@@ -5,7 +5,7 @@ NumPlayers = 4
 SimulationDepth = 3
 
 def main():
-   random.seed(514)
+   random.seed(515)
    game = Game(NumPlayers, SimulationDepth)
    score = game.play()
 

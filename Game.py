@@ -53,20 +53,20 @@ class Game():
 
    def playSingleTurn(self, simulation):
       action, score = self._players[self._currentPlayerIndex].getActionForTurn(simulation)
-      self.processAction(action)
+      self.processAction(action, simulation.isSimulating())
       return score # Represents the best score at the deepest sim level.
 
-   def processAction(self, action):
+   def processAction(self, action, isSimulating):
       if action.actionName() == "Hint":
          self.processHint(action)
       else:
-         self.processBurnOrPlay(action)
+         self.processBurnOrPlay(action, isSimulating)
 
    def processHint(self, hint):
       hint.player().receiveHint(hint)
       self._hintTokens -= 1
 
-   def processBurnOrPlay(self, action):
+   def processBurnOrPlay(self, action, isSimulating):
       player = action.player()
       cardFact = action.cardFact()
       player.dropCard(cardFact)
@@ -82,7 +82,8 @@ class Game():
          else:
             self._deathTokens -= 1 # :(
 
-      self._cardDrawManager.handleDrawFor(player)
+      if not isSimulating:
+         self._cardDrawManager.handleDrawFor(player)
 
    def progress(self, suit):
       return self._progress[suit]

@@ -3,7 +3,6 @@ from copy import deepcopy
 class GameState:
    def __init__(self, game):
       self._game = game
-      self.deck = deepcopy(game._deck)
       self.progress = deepcopy(game._progress)
       self.hintTokens = game.hintTokens()
       self.deathTokens = game.deathTokens()
@@ -16,7 +15,6 @@ class GameState:
          self.cardFactStates[player] = cardFactStates
 
    def restoreGame(self):
-      self._game._deck = self.deck
       self._game._progress = self.progress
       self._game._hintTokens = self.hintTokens
       self._game._deathTokens = self.deathTokens

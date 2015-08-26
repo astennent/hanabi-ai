@@ -35,8 +35,9 @@ class Player():
    def getActionForTurn(self, simulation):
       actions = self.getSafePlays() + self.getSafeBurns()
 
-      if self._game.hintTokens() > 0:
-         actions += self.getValidHintsForOthers(simulation)
+      # Only consider hints if you don't have something better to do.
+      if len(actions) == 0 and self._game.hintTokens() > 0:
+         actions = self.getValidHintsForOthers(simulation)
 
       if len(actions) == 0:
          return self.Yolo()
@@ -44,25 +45,23 @@ class Player():
       return simulation.simulate(actions)
 
    def getSafePlays(self):
-      cardFacts = []
       for cardFact in self._hand:
          if cardFact.shouldPlay():
             if cardFact.verifyPlayable(self._game.allProgress()):
-               cardFacts.append(Play(cardFact, self))
+               # Is this cheating? This always plays the first card you find...
+               return [Play(cardFact, self)]
             else:
                cardFact.setShouldBurn()
 
-      return cardFacts
+      return []
 
 
    def getSafeBurns(self):
-      cardFacts = []
       for cardFact in self._hand:
          if cardFact.shouldBurn():
-            cardFacts.append(Burn(cardFact, self)) # should double check this?
+            return [Burn(cardFact, self)] # should this be verified?
 
-      return cardFacts
-
+      return []
 
    def getCards(self):
       cards = []

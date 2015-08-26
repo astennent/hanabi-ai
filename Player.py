@@ -10,7 +10,6 @@ class Player():
       self._hand = []
       self._id = id
 
-
    def __str__(self):
       output = str.format("Player{} [", self._id)
       for card in self._hand:
@@ -18,59 +17,51 @@ class Player():
       output= output[0:-2] + "]"
       return output
 
-
    def hand(self):
       return self._hand
-
 
    def receiveCard(self, cardFact):
       self._hand.append(cardFact)
 
-
    def dropCard(self, cardFact):
       self._hand.remove(cardFact)
       self.removePossibility(cardFact.card()) # You can look at it now.
-
 
    def removePossibility(self, card):
       for cardFact in self._hand:
          cardFact.removePossibility(card)
 
 
-   def GetActionForTurn(self, simulationMetadata):
-      #TODO: Reconsider Plays and Burns if hints are better.
-      safePlayFact = self.getSafePlay()
-      if safePlayFact:
-         return Play(safePlayFact, self)
-      
-      safeBurnFact = self.getSafeBurn()
-      if safeBurnFact:
-         return Burn(safeBurnFact, self)
+   def getActionForTurn(self, simulation):
+      actions = self.getSafePlays() + self.getSafeBurns()
 
       if self._game.hintTokens() > 0:
-         return self.calculateBestHint(simulationMetadata)
+         actions += self.getValidHintsForOthers(simulation)
 
-      # No more Hint tokens. Guessing time!
-      return self.Yolo()
+      if len(actions) == 0:
+         return self.Yolo()
+      
+      return simulation.simulate(actions)
 
-
-   def getSafePlay(self):
+   def getSafePlays(self):
+      cardFacts = []
       for cardFact in self._hand:
          if cardFact.shouldPlay():
             if cardFact.verifyPlayable(self._game.allProgress()):
-               return cardFact
+               cardFacts.append(Play(cardFact, self))
             else:
                cardFact.setShouldBurn()
 
-      return None
+      return cardFacts
 
 
-   def getSafeBurn(self):
+   def getSafeBurns(self):
+      cardFacts = []
       for cardFact in self._hand:
          if cardFact.shouldBurn():
-            return cardFact # should double check this?
+            cardFacts.append(Burn(cardFact, self)) # should double check this?
 
-      return None
+      return cardFacts
 
 
    def getCards(self):
@@ -80,30 +71,15 @@ class Player():
       return cards
 
 
-   def calculateBestHint(self, simulationMetadata):
-      bestScore = 0
-      bestHint = None
+   def getValidHintsForOthers(self, simulation):
+      hints = []
       for otherPlayer in self._game.players():
-         if otherPlayer == self or otherPlayer == simulationMetadata.initialPlayer:
-            continue
+         if otherPlayer != self and otherPlayer != simulation.initialPlayer:
+            hints += otherPlayer.getValidHintsForSelf()
+      
+      return hints
 
-         validHints = otherPlayer.getValidHints()
-         for hint in validHints:
-
-            if simulationMetadata.depth <= 0:
-               print str.format("{}Player {} At depth {}. \t Considering {} \t for player{}", \
-                  "  "*simulationMetadata.depth, self._id, simulationMetadata.depth, hint, otherPlayer._id)
-            score = self._game.simulate(hint, simulationMetadata)
-            if simulationMetadata.depth <= 0:
-               print str.format("{}Score: {}", "  "*simulationMetadata.depth, score)
-
-            if score > bestScore:
-               bestScore = score
-               bestHint = hint
-      return bestHint
-
-
-   def getValidHints(self):
+   def getValidHintsForSelf(self):
       #TODO: Make sure you don't double-hint.
 
       numbers = set([])

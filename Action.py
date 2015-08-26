@@ -11,14 +11,18 @@ class Action:
 
 
 class Burn(Action):
+   def __str__(self):
+      return "Burn"
+
    def actionName(self):
       return "Burn"
 
-
 class Play(Action):
-   def actionName(self):
+   def __str__(self):
       return "Play"
 
+   def actionName(self):
+      return "Play"
 
 class Hint(Action):
    def __init__(self, isNumber, value, player):
@@ -27,7 +31,7 @@ class Hint(Action):
       self._player = player
 
    def __str__(self):
-      return str.format("#{}", self._value)
+      return str.format("#{} for {}", self._value, self._player)
 
    def __unicode__(self):
       return str(self)

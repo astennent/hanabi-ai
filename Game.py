@@ -1,7 +1,7 @@
 from Player import *
 from Deck import *
 from CardDrawManager import *
-from GameState import *
+from Simulation import *
 
 InitialDrawCount = 4
 InitialHintTokens = 8
@@ -9,7 +9,7 @@ InitialDeathTokens = 3
 
 progressValues = [0, 50, 95, 130, 155, 170]
 hintTokenValue = 10
-deathTokenValues = [-1000, 10, 15, 20]
+deathTokenValues = [-1000, -22, -11, 0]
 
 class Game():
    def __init__(self, numPlayers, maxSimulationDepth):
@@ -48,12 +48,13 @@ class Game():
 
    def play(self):
       #TODO: This should be a loop.
-      simulationMetadata = SimulationMetadata(self._players[self._currentPlayerIndex])
-      self.playSingleTurn(simulationMetadata)
+      simulation = Simulation(self, self._players[self._currentPlayerIndex])
+      self.playSingleTurn(simulation)
 
-   def playSingleTurn(self, simulationMetadata):
-      action = self._players[self._currentPlayerIndex].GetActionForTurn(simulationMetadata)
+   def playSingleTurn(self, simulation):
+      action, score = self._players[self._currentPlayerIndex].getActionForTurn(simulation)
       self.processAction(action)
+      return score # Represents the best score at the deepest sim level.
 
    def processAction(self, action):
       if action.actionName() == "Hint":
@@ -79,34 +80,9 @@ class Game():
          if self.progress(suit) == number - 1:
             self._progress[suit] = number  # :)
          else:
-            self.deathTokens -= 1 # :(
+            self._deathTokens -= 1 # :(
 
       self._cardDrawManager.handleDrawFor(player)
-
-   def simulate(self, action, simulationMetadata):
-      originalDepth = simulationMetadata.depth
-      atMaxDepth = (originalDepth >= self._maxSimulationDepth)
-      gameState = GameState(self)
-      self.processAction(action)
-
-      if not atMaxDepth:
-         self.iteratePlayerIndex()
-         self.playSingleTurn(simulationMetadata.increment())
-
-      score = self.score()
-      self.setState(gameState)
-      simulationMetadata.depth = originalDepth
-      return score
-
-   def setState(self, state):
-      self._deck = state.deck
-      self._progress = state.progress
-      self._hintTokens = state.hintTokens
-      self._deathTokens = state.deathTokens
-      self._currentPlayerIndex = state.currentPlayerIndex
-      for i, player in enumerate(self._players):
-         player._hand = state.hands[i]
-
 
    def progress(self, suit):
       return self._progress[suit]
@@ -132,16 +108,16 @@ class Game():
          suitProgress = self._progress[suit]
          score += progressValues[suitProgress]
 
-      score += self._hintTokens * hintTokenValue
+      score += (self._hintTokens -InitialHintTokens) * hintTokenValue
       score += deathTokenValues[self._deathTokens]
+
+      # Scoring for unplayed cards. Needs A/B Testing.
+      for player in self._players:
+         for cardFact in player.hand():
+            if cardFact.shouldPlay():
+               score += 9
+            elif cardFact.shouldBurn():
+               score += 6
 
       return score
 
-class SimulationMetadata:
-   def __init__(self, initialPlayer):
-      self.initialPlayer = initialPlayer
-      self.depth = 0
-
-   def increment(self):
-      self.depth += 1
-      return self

@@ -10,7 +10,7 @@ class Action:
       return self._cardFact
 
    def __str__(self):
-      return str.format("{} {} by {}", self.actionName(), self._cardFact, self._player)
+      return str.format("{} {}", self.actionName(), self._cardFact)
 
 
 class Burn(Action):

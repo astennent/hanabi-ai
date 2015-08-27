@@ -56,6 +56,9 @@ class CardFact:
       self._shouldBurn = True
       self._shouldPlay = False
 
+   def disableBurn(self):
+      self._shouldBurn = False
+
    def possibilities(self):
       return self._possibilities
 
@@ -89,9 +92,18 @@ class CardFact:
 
       return False
 
+   # If there is even one possibility that would be a reasonable burn, this will be True.
    def verifyBurnable(self, progress):
-      #TODO: Think this through.
-      return True
+      for suit in progress:
+         suitProgress= progress[suit]
+         for number in NUMBERS:
+            possibilities = self._possibilities[suit][number]
+            if possibilities > 1: # Definitely won't block this.
+               return True
+            elif possibilities == 1 and number <= suitProgress: #
+               return True
+
+      return False
 
    def hasPossibility(self, suit, number):
       return self._possibilities[suit][number] > 0

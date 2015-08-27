@@ -1,6 +1,5 @@
 from CardFact import *
 from Action import *
-from Game import * # TODO: This is just for hintTokenValue. Consider refactoring.
 
 import copy
 
@@ -37,8 +36,8 @@ class Player():
       actions = self.getSafePlays() + self.getSafeBurns()
 
       # Only consider hints if you don't have something better to do.
-      if len(actions) == 0 and self._game.hintTokens() > 0:
-         actions = self.getValidHintsForOthers(simulation)
+      if self._game.hintTokens() > 0:
+         actions += self.getValidHintsForOthers(simulation)
 
       if len(actions) == 0:
          actions = [self.Yolo(simulation)]
@@ -46,21 +45,26 @@ class Player():
       return simulation.simulate(actions)
 
    def getSafePlays(self):
+      #TODO: Even if you only return one thing, you can still choose the BEST thing with more info.
       for cardFact in self._hand:
          if cardFact.shouldPlay():
             if cardFact.verifyPlayable(self._game.allProgress()):
                # Is this cheating? This always plays the first card you find...
                return [Play(cardFact, self)]
             else:
-               cardFact.setShouldBurn()
+               cardFact.setShouldBurn() #Turns out this can't be played. Burn it!
 
       return []
 
 
    def getSafeBurns(self):
+      #TODO: Even if you only return one thing, you can still choose the BEST thing with more info.
       for cardFact in self._hand:
          if cardFact.shouldBurn():
-            return [Burn(cardFact, self)] # should this be verified?
+            if cardFact.verifyBurnable(self._game.allProgress()):
+               return [Burn(cardFact, self)] # should this be verified?
+            else:
+               cardFact.disableBurn()
 
       return []
 

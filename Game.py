@@ -7,7 +7,7 @@ InitialDrawCount = 4
 InitialHintTokens = 8
 InitialDeathTokens = 3
 
-progressValues = [0, 50, 95, 130, 155, 170]
+progressValues = [0, 60, 110, 145, 170, 190]
 hintTokenValue = 10
 deathTokenValues = [-1000, -40, -20, 0]
 
@@ -55,6 +55,9 @@ class Game():
             break
          self.doTurn()        
 
+      if self._deathTokens == 0:
+         print "Ended early because we fucked up."
+
       print self._progress
 
    def doTurn(self):
@@ -67,7 +70,7 @@ class Game():
       action, score = self._players[self._currentPlayerIndex].getActionForTurn(simulation)
       if canPrint:
          print "--------"
-         print str.format("Score at depth: {}, Action Performed: {}", score, action)
+         print str.format("Score at depth: {}, Action Performed: {} by {}", score, action, self.currentPlayer())
          print self.allProgress()
       self.processAction(action, simulation.isSimulating())
       if canPrint:

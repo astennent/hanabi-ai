@@ -9,7 +9,7 @@ InitialDeathTokens = 3
 
 progressValues = [0, 50, 95, 130, 155, 170]
 hintTokenValue = 10
-deathTokenValues = [-1000, -22, -11, 0]
+deathTokenValues = [-1000, -40, -20, 0]
 
 class Game():
    def __init__(self, numPlayers, maxSimulationDepth):
@@ -47,13 +47,33 @@ class Game():
       self._currentPlayerIndex %= len(self._players)
 
    def play(self):
-      #TODO: This should be a loop.
-      simulation = Simulation(self, self._players[self._currentPlayerIndex])
-      self.playSingleTurn(simulation)
+      while self._deck.hasNext() and self._deathTokens > 0:
+         self.doTurn()
 
-   def playSingleTurn(self, simulation):
+      for i in range(len(self._players)):
+         if self._deathTokens == 0:
+            break
+         self.doTurn()        
+
+      print self._progress
+
+   def doTurn(self):
+      simulation = Simulation(self, self._players[self._currentPlayerIndex])
+      self.simulateSingleTurn(simulation)
+      self.iteratePlayerIndex()
+
+   def simulateSingleTurn(self, simulation):
+      canPrint = simulation._depth == 0
       action, score = self._players[self._currentPlayerIndex].getActionForTurn(simulation)
+      if canPrint:
+         print "--------"
+         print str.format("Score at depth: {}, Action Performed: {}", score, action)
+         print self.allProgress()
       self.processAction(action, simulation.isSimulating())
+      if canPrint:
+         print str.format("Score after play: {}", self.score())
+         print "--------"
+
       return score # Represents the best score at the deepest sim level.
 
    def processAction(self, action, isSimulating):
@@ -103,6 +123,17 @@ class Game():
    def deathTokens(self):
       return self._deathTokens
 
+   def getDeathTokenValue(self, numTokens):
+      if numTokens < 0:
+         numTokens = 0
+      return deathTokenValues[numTokens]
+
+   def nextDeathTokenValue(self):
+      return self.getDeathTokenValue(self._deathTokens-1)
+
+   def nextHintTokenValue(self):
+      return hintTokenValue
+
    def score(self):
       score = 0
       for suit in SUITS:
@@ -110,15 +141,15 @@ class Game():
          score += progressValues[suitProgress]
 
       score += (self._hintTokens -InitialHintTokens) * hintTokenValue
-      score += deathTokenValues[self._deathTokens]
+      score += self.getDeathTokenValue(self._deathTokens)
 
       # Scoring for unplayed cards. Needs A/B Testing.
       for player in self._players:
          for cardFact in player.hand():
             if cardFact.shouldPlay():
-               score += 9
+               score += 3
             elif cardFact.shouldBurn():
-               score += 6
+               score += 1
 
       return score
 

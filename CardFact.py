@@ -72,14 +72,19 @@ class CardFact:
                self._possibilities[suit][number] = 0
 
    def removePossibility(self, card):
-      self._possibilities[card.suit()][card.number()] -= 1
+      currentValue = self._possibilities[card.suit()][card.number()]
+
+      # It is common to receive an indirect hint that sets a possibility to 0 before you see the 
+      # card that's causing this to be removed.
+      if currentValue > 0:
+         self._possibilities[card.suit()][card.number()] -= 1
 
 
    # Returns True if there is at least ONE possibility that would be playable.
    def verifyPlayable(self, progress):
       for suit in progress:
          nextRequiredNumber = progress[suit] + 1
-         if self.hasPossibility(suit, nextRequiredNumber):
+         if nextRequiredNumber <= 5 and self.hasPossibility(suit, nextRequiredNumber):
             return True
 
       return False
@@ -90,3 +95,20 @@ class CardFact:
 
    def hasPossibility(self, suit, number):
       return self._possibilities[suit][number] > 0
+
+
+   def calculateYolo(self, progress):
+      totalPossibilities = 0.0
+      totalPlayable = 0
+      totalBurnable = 0
+      for suit in SUITS:
+         suitProgress = progress[suit]
+         for number in NUMBERS:
+            remainingMatches = self._possibilities[suit][number]
+            totalPossibilities += remainingMatches
+            if number == suitProgress+1:
+               totalPlayable += remainingMatches
+            elif number <= suitProgress:
+               totalBurnable += remainingMatches
+
+      return totalPlayable / totalPossibilities, totalBurnable / totalPossibilities

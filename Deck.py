@@ -37,5 +37,8 @@ class Deck():
       self._remainingCards[nextCard.suit()][nextCard.number()] -= 1
       return nextCard
 
+   def hasNext(self):
+      return len(self._cards) > 0
+
    def remainingCards(self):
       return copy.deepcopy(self._remainingCards)

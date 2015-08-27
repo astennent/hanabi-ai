@@ -5,6 +5,9 @@ class CardDrawManager:
       self._game = game
 
    def handleDrawFor(self, player):
+      if not self._game.deck().hasNext():
+         return
+         
       possibilities = self.getKnownRemainingCardsForPlayer(player)
       
       card = self._game.deck().draw()

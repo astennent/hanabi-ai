@@ -15,17 +15,13 @@ class Simulation:
       bestAction = 0
       self._depth += 1
 
-      MAX_PRINT_DEPTH = 0
       for action in actions:
-         if self._depth <= MAX_PRINT_DEPTH:   print str.format("{}action: {}", "  " * self._depth, action)
          score = self.executeTopAction(action)
-         if self._depth <= MAX_PRINT_DEPTH:   print str.format("{}action: {}, score: {}", "  " * self._depth, action, score)
          if score > bestScore:
             bestScore = score
             bestAction = action
 
       self._depth -= 1
-      if self._depth == 0:   print str.format("{}bestScore: {}, action: {}", "  " * self._depth, bestScore, bestAction)
 
       return bestAction, bestScore
 
@@ -35,9 +31,11 @@ class Simulation:
       game.processAction(action, True)
 
       atMaxDepth = (self._depth >= game._maxSimulationDepth)
-      if not atMaxDepth:
+      if game.deathTokens() == 0:
+         score = -1000
+      elif not atMaxDepth:
          game.iteratePlayerIndex()
-         score = game.playSingleTurn(self)
+         score = game.simulateSingleTurn(self)
       else:
          score = game.score()
 

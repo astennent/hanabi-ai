@@ -1,5 +1,6 @@
 from CardFact import *
 from Action import *
+from Game import * # TODO: This is just for hintTokenValue. Consider refactoring.
 
 import copy
 
@@ -40,7 +41,7 @@ class Player():
          actions = self.getValidHintsForOthers(simulation)
 
       if len(actions) == 0:
-         return self.Yolo()
+         actions = [self.Yolo(simulation)]
       
       return simulation.simulate(actions)
 
@@ -143,7 +144,46 @@ class Player():
          relevantCardFacts[0].setShouldPlay()
 
 
-   def Yolo(self):
-      print "I don't know how to yolo"
-      exit(0)
+   def Yolo(self, simulation):
+      # print ""
+      # print str(self)
+      # print str(self._game._progress)
+
+      highestPlayProbability = 0
+      bestPlay = None
+      highestBurnProbability = 0
+      bestBurn = None
+
+      for cardFact in self.hand():
+         playProbability, burnProbability = cardFact.calculateYolo(self._game.allProgress())
+         if playProbability > highestPlayProbability:
+            highestPlayProbability = playProbability
+            bestPlay = cardFact
+         if burnProbability > highestBurnProbability:
+            highestBurnProbability = burnProbability
+            bestBurn = cardFact
+
+      gainOfBadPlay = self._game.nextDeathTokenValue()
+      gainOfGoodPlay = 10 # TODO: This should be more sensitive to progress.
+
+      gainOfBadBurn = -30 # TODO: This should also be more senstive to blocking progress.
+      gainOfGoodBurn = self._game.nextHintTokenValue()
+
+      playUtility = (gainOfGoodPlay * highestPlayProbability) + (gainOfBadPlay * (1 - highestPlayProbability))
+      burnUtility = (gainOfGoodBurn * highestBurnProbability) + (gainOfBadBurn * (1 - highestBurnProbability))
+
+      # print "--------"
+      # print str.format("Burn: Utility: {},  Card: {}, Prob: {}", burnUtility, bestBurn, highestBurnProbability)
+      # print str.format("Play: Utility: {},  Card: {}, Prob: {}", playUtility, bestPlay, highestPlayProbability)
+      # print "--------"
+
+      # exit(0)
+      if bestPlay != None and playUtility > burnUtility:
+         return Play(bestPlay, self)
+      elif bestBurn != None:
+         return Burn(bestBurn, self)
+      else:
+         # Definitely no burns or plays. Just burn the first card. 
+         # TODO: Can this selection be smarter? Maybe avoid discards that end suits?
+         return Burn(self.hand()[0], self)
 

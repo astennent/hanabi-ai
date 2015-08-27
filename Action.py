@@ -9,18 +9,15 @@ class Action:
    def cardFact(self):
       return self._cardFact
 
+   def __str__(self):
+      return str.format("{} {} by {}", self.actionName(), self._cardFact, self._player)
+
 
 class Burn(Action):
-   def __str__(self):
-      return "Burn"
-
    def actionName(self):
       return "Burn"
 
 class Play(Action):
-   def __str__(self):
-      return "Play"
-
    def actionName(self):
       return "Play"
 

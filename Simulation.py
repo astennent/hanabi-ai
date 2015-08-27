@@ -7,7 +7,7 @@ class Simulation:
       self._depth = 0
 
    def isSimulating(self):
-      return self._depth == 0
+      return self._depth > 0
 
    def simulate(self, actions):
 

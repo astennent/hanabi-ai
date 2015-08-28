@@ -3,14 +3,16 @@ from GameState import *
 class Simulation:
    def __init__(self, game, initialPlayer):
       self._game = game
-      self.initialPlayer = initialPlayer
+      self._initialPlayer = initialPlayer
       self._depth = 0
+
+   def initialPlayer(self):
+      return self._initialPlayer
 
    def isSimulating(self):
       return self._depth > 0
 
    def simulate(self, actions):
-
       bestScore = -9999
       bestAction = 0
       self._depth += 1

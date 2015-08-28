@@ -8,8 +8,8 @@ InitialHintTokens = 8
 InitialDeathTokens = 3
 
 progressValues = [0, 60, 110, 145, 170, 190]
-hintTokenValue = 10
-deathTokenValues = [-1000, -40, -20, 0]
+hintTokenValues = [10, 10, 10, 10, 10, 0, 0, 0]
+deathTokenValues = [-1000, -20, -10, 0]
 
 class Game():
    def __init__(self, numPlayers, maxSimulationDepth):
@@ -17,6 +17,9 @@ class Game():
       self._currentPlayerIndex = 0
       self._deck = Deck()
       self._cardDrawManager = CardDrawManager(self)
+
+      print "==========="
+      self._deck.printCards()
 
       for playerIndex in range(numPlayers):
          player = Player(self, playerIndex)
@@ -70,11 +73,11 @@ class Game():
       action, score = self._players[self._currentPlayerIndex].getActionForTurn(simulation)
       if canPrint:
          print "--------"
-         print str.format("Score at depth: {}, Action Performed: {} by {}", score, action, self.currentPlayer())
-         print self.allProgress()
+         print str.format("{} will do: {}. Score at depth: {}", self.currentPlayer(), action, score)
+         self.printProgress()
       self.processAction(action, simulation.isSimulating())
       if canPrint:
-         print str.format("Score after play: {}", self.score())
+         print str.format("Score after play: {}. Hint tokens: {}. Death Tokens: {}", self.score(), self._hintTokens, self._deathTokens)
          print "--------"
 
       return score # Represents the best score at the deepest sim level.
@@ -114,6 +117,12 @@ class Game():
    def allProgress(self):
       return self._progress
 
+   def printProgress(self):
+      output = "Progress {"
+      for suit in SUITS:
+         output += str.format(" {}:{} ", suit, self.progress(suit))
+      print output + "}"
+
    def currentPlayer(self):
       return self._players[self._currentPlayerIndex]
 
@@ -131,28 +140,33 @@ class Game():
          numTokens = 0
       return deathTokenValues[numTokens]
 
+   # Returns the value of spending a death token.
    def nextDeathTokenValue(self):
       return self.getDeathTokenValue(self._deathTokens-1)
 
+   # Returns the value of gaining a hint.
    def nextHintTokenValue(self):
-      return hintTokenValue
+      return hintTokenValues[self._hintTokens+1]
+
+   def calculateProgressValue(self, suitProgress):
+      return -5.3571 * suitProgress * suitProgress + 75.071 * suitProgress - 69
 
    def score(self):
       score = 0
       for suit in SUITS:
          suitProgress = self._progress[suit]
-         score += progressValues[suitProgress]
+         score += self.calculateProgressValue(suitProgress)
 
-      score += (self._hintTokens -InitialHintTokens) * hintTokenValue
+      score += sum(hintTokenValues[0:self._hintTokens])
       score += self.getDeathTokenValue(self._deathTokens)
 
       # Scoring for unplayed cards. Needs A/B Testing.
       for player in self._players:
          for cardFact in player.hand():
             if cardFact.shouldPlay():
-               score += 3
+               score += 4
             elif cardFact.shouldBurn():
-               score += 1
+               score += 2
 
       return score
 

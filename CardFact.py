@@ -83,14 +83,40 @@ class CardFact:
          self._possibilities[card.suit()][card.number()] -= 1
 
 
-   # Returns True if there is at least ONE possibility that would be playable.
-   def verifyPlayable(self, progress):
+   def calculateExpectedNumber(self, progress, uninformedSimPlayer):
+      expectedSum = 0
+      expectedCount = 0
+      
+      # To avoid cheating, we add back possibilities of the player counting these options. This
+      # makes the expected number for each card slightly higher (and less accurate), but the 
+      # net effect of counting instead of guessing randomly is still positive.
+      extraPossibilities = dict([]) 
+      if uninformedSimPlayer is not None:
+         for cardFact in uninformedSimPlayer.hand():
+            key = cardFact.card().suit() + str(cardFact.card().number())
+            if key in extraPossibilities:
+               extraPossibilities[key] += 1
+            else:
+               extraPossibilities[key] = 1
+
       for suit in progress:
          nextRequiredNumber = progress[suit] + 1
-         if nextRequiredNumber <= 5 and self.hasPossibility(suit, nextRequiredNumber):
-            return True
+         if nextRequiredNumber <= 5:
+            numPossibilities = self._possibilities[suit][nextRequiredNumber]
 
-      return False
+            extraPossibilitiesKey = suit + str(nextRequiredNumber)
+            if extraPossibilitiesKey in extraPossibilities :
+               numPossibilities -= max(numPossibilities-extraPossibilities[extraPossibilitiesKey], 0)
+
+            expectedSum += numPossibilities * nextRequiredNumber
+            expectedCount += numPossibilities
+
+      if expectedCount == 0:
+         return None # The card is not playable right now!
+
+
+      return (1.0 * expectedSum) / expectedCount
+      
 
    # If there is even one possibility that would be a reasonable burn, this will be True.
    def verifyBurnable(self, progress):

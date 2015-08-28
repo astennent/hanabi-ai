@@ -31,9 +31,16 @@ class Player():
       for cardFact in self._hand:
          cardFact.removePossibility(card)
 
-
    def getActionForTurn(self, simulation):
-      actions = self.getSafePlays() + self.getSafeBurns()
+      actions = []
+      
+      safePlay = self.calculateBestSafePlay(simulation)
+      if safePlay:
+         actions.append(safePlay)
+
+      safeBurn = self.calculateBestSafeBurn()
+      if safeBurn:
+         actions.append(safeBurn)
 
       # Only consider hints if you don't have something better to do.
       if self._game.hintTokens() > 0:
@@ -44,29 +51,43 @@ class Player():
       
       return simulation.simulate(actions)
 
-   def getSafePlays(self):
-      #TODO: Even if you only return one thing, you can still choose the BEST thing with more info.
+
+   # Returns the cardFact that the simulation's current player thinks is the best play. 
+   # Returns None if there are no safe plays.
+   def calculateBestSafePlay(self, simulation):
+      bestPlay = None
+      lowestExpectedNumber = 9999
       for cardFact in self._hand:
          if cardFact.shouldPlay():
-            if cardFact.verifyPlayable(self._game.allProgress()):
-               # Is this cheating? This always plays the first card you find...
-               return [Play(cardFact, self)]
-            else:
+
+            uninformedPlayer = simulation.initialPlayer()
+            if uninformedPlayer is not self:
+               uninformedPlayer = None
+            
+            expectedNumber = cardFact.calculateExpectedNumber(self._game.allProgress(), uninformedPlayer)
+            if expectedNumber == None:
                cardFact.setShouldBurn() #Turns out this can't be played. Burn it!
+            elif expectedNumber < lowestExpectedNumber:
+               lowestExpectedNumber = expectedNumber
+               bestPlay = cardFact
 
-      return []
+      if bestPlay:
+         return Play(bestPlay, self)
+      else:
+         return None
 
 
-   def getSafeBurns(self):
-      #TODO: Even if you only return one thing, you can still choose the BEST thing with more info.
+   def calculateBestSafeBurn(self):
+      #TODO: Even if you only return one thing, you can still choose the BEST burn with more info.
       for cardFact in self._hand:
          if cardFact.shouldBurn():
             if cardFact.verifyBurnable(self._game.allProgress()):
-               return [Burn(cardFact, self)] # should this be verified?
+               return Burn(cardFact, self) # should this be verified?
             else:
                cardFact.disableBurn()
 
-      return []
+      return None
+
 
    def getCards(self):
       cards = []
@@ -78,7 +99,7 @@ class Player():
    def getValidHintsForOthers(self, simulation):
       hints = []
       for otherPlayer in self._game.players():
-         if otherPlayer != self and otherPlayer != simulation.initialPlayer:
+         if otherPlayer != self and otherPlayer != simulation.initialPlayer():
             hints += otherPlayer.getValidHintsForSelf()
       
       return hints
@@ -149,10 +170,6 @@ class Player():
 
 
    def Yolo(self, simulation):
-      # print ""
-      # print str(self)
-      # print str(self._game._progress)
-
       highestPlayProbability = 0
       bestPlay = None
       highestBurnProbability = 0
@@ -167,9 +184,19 @@ class Player():
             highestBurnProbability = burnProbability
             bestBurn = cardFact
 
-      gainOfBadPlay = self._game.nextDeathTokenValue()
-      gainOfGoodPlay = 10 # TODO: This should be more sensitive to progress.
+      if bestPlay is None and bestBurn is None:
+         # Definitely no burns or plays. Just burn the first card. 
+         # TODO: Can this selection be smarter? Maybe avoid discards that end suits?
+         return Burn(self.hand()[0], self)
+      elif bestPlay is None:
+         return Burn(bestBurn, self)
+      elif bestBurn is None:
+         return Play(bestPlay, self)
+         
+      expectedNumber = bestPlay.calculateExpectedNumber(self._game.allProgress(), simulation.initialPlayer())
+      gainOfGoodPlay = self._game.calculateProgressValue(expectedNumber) - self._game.calculateProgressValue(expectedNumber - 1)
 
+      gainOfBadPlay = self._game.nextDeathTokenValue()
       gainOfBadBurn = -30 # TODO: This should also be more senstive to blocking progress.
       gainOfGoodBurn = self._game.nextHintTokenValue()
 

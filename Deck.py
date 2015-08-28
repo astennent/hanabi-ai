@@ -32,6 +32,12 @@ class Deck():
 
       self._remainingCards = self.GenerateFreshMap()
 
+   def printCards(self):
+      output = "["
+      for card in self._cards:
+         output += " " + str(card) + " "
+      print output + "]"
+
    def draw(self):
       nextCard = self._cards.pop()
       self._remainingCards[nextCard.suit()][nextCard.number()] -= 1

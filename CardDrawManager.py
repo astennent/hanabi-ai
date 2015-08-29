@@ -16,7 +16,7 @@ class CardDrawManager:
          if otherPlayer is not player:
             otherPlayer.removePossibility(card)
 
-      cardFact = CardFact(card, possibilities)
+      cardFact = CardFact(card, possibilities, player)
       player.receiveCard(cardFact)
 
    def getKnownRemainingCardsForPlayer(self, player):

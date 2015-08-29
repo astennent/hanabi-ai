@@ -8,8 +8,8 @@ InitialHintTokens = 8
 InitialDeathTokens = 3
 
 progressValues = [0, 60, 110, 145, 170, 190]
-hintTokenValues = [10, 10, 10, 10, 10, 0, 0, 0]
-deathTokenValues = [-1000, -20, -10, 0]
+hintTokenValues = [20, 15, 10, 10, 10, 0, 0, 0]
+deathTokenValues = [-1000, -80, -20, 0]
 
 class Game():
    def __init__(self, numPlayers, maxSimulationDepth):
@@ -77,7 +77,7 @@ class Game():
          self.printProgress()
       self.processAction(action, simulation.isSimulating())
       if canPrint:
-         print str.format("Score after play: {}. Hint tokens: {}. Death Tokens: {}", self.score(), self._hintTokens, self._deathTokens)
+         print str.format("Score after play: {}. Hint tokens: {}. Death Tokens: {}", self.score(None), self._hintTokens, self._deathTokens)
          print "--------"
 
       return score # Represents the best score at the deepest sim level.
@@ -149,9 +149,9 @@ class Game():
       return hintTokenValues[self._hintTokens+1]
 
    def calculateProgressValue(self, suitProgress):
-      return -5.3571 * suitProgress * suitProgress + 75.071 * suitProgress - 69
+      return -3.3571 * suitProgress * suitProgress + 75.071 * suitProgress
 
-   def score(self):
+   def score(self, uninformedPlayer):
       score = 0
       for suit in SUITS:
          suitProgress = self._progress[suit]
@@ -160,13 +160,22 @@ class Game():
       score += sum(hintTokenValues[0:self._hintTokens])
       score += self.getDeathTokenValue(self._deathTokens)
 
-      # Scoring for unplayed cards. Needs A/B Testing.
+      # Scoring for unplayed cards. Needs A/B Testing. These numbers don't need to be high.
+      # They are just used for breaking ties between hints that are too distant to observe.
       for player in self._players:
          for cardFact in player.hand():
-            if cardFact.shouldPlay():
-               score += 4
-            elif cardFact.shouldBurn():
-               score += 2
+            if player is not uninformedPlayer:
+               card  = cardFact.card()
+               if cardFact.shouldPlay():
+                  if self._progress[card.suit()] == card.number() - 1:
+                     score += 8
+                  else:
+                     score -= 2
+               elif cardFact.shouldBurn():
+                  if self._progress[card.suit()] >= card.number():
+                     score += 7
+                  else:
+                     score -= 7
 
       return score
 

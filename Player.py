@@ -34,13 +34,14 @@ class Player():
    def getActionForTurn(self, simulation):
       actions = []
       
-      safePlay = self.calculateBestSafePlay(simulation)
+      safePlay = self.calculateBestSafePlay(simulation.initialPlayer())
       if safePlay:
          actions.append(safePlay)
 
-      safeBurn = self.calculateBestSafeBurn()
-      if safeBurn:
-         actions.append(safeBurn)
+      if self._game.hintTokens < 8:
+         safeBurn = self.calculateBestSafeBurn(simulation.initialPlayer())
+         if safeBurn:
+            actions.append(safeBurn)
 
       # Only consider hints if you don't have something better to do.
       if self._game.hintTokens() > 0:
@@ -54,22 +55,24 @@ class Player():
 
    # Returns the cardFact that the simulation's current player thinks is the best play. 
    # Returns None if there are no safe plays.
-   def calculateBestSafePlay(self, simulation):
+   def calculateBestSafePlay(self, uninformedPlayer):
       bestPlay = None
       lowestExpectedNumber = 9999
+      progress = self._game.allProgress()
+
       for cardFact in self._hand:
          if cardFact.shouldPlay():
-
-            uninformedPlayer = simulation.initialPlayer()
-            if uninformedPlayer is not self:
-               uninformedPlayer = None
-            
-            expectedNumber = cardFact.calculateExpectedNumber(self._game.allProgress(), uninformedPlayer)
+            expectedNumber = cardFact.calculateExpectedNumber(progress, uninformedPlayer)
             if expectedNumber == None:
                cardFact.setShouldBurn() #Turns out this can't be played. Burn it!
             elif expectedNumber < lowestExpectedNumber:
                lowestExpectedNumber = expectedNumber
                bestPlay = cardFact
+         elif cardFact.isFullyRevealed(uninformedPlayer):
+            card = cardFact.card()
+            if progress[card.suit()] == card.number() - 1:
+               if card.number() < lowestExpectedNumber:
+                  bestPlay = cardFact
 
       if bestPlay:
          return Play(bestPlay, self)
@@ -77,10 +80,14 @@ class Player():
          return None
 
 
-   def calculateBestSafeBurn(self):
-      #TODO: Even if you only return one thing, you can still choose the BEST burn with more info.
+   def calculateBestSafeBurn(self, uninformedPlayer):
       for cardFact in self._hand:
-         if cardFact.shouldBurn():
+         if cardFact.isFullyRevealed(uninformedPlayer):
+            card = cardFact.card()
+            if progress[card.suit()] <= card.number():
+               if card.number() < lowestExpectedNumber:
+                  return Burn(cardFact, self)
+         elif cardFact.shouldBurn():
             if cardFact.verifyBurnable(self._game.allProgress()):
                return Burn(cardFact, self) # should this be verified?
             else:
@@ -192,7 +199,7 @@ class Player():
          return Burn(bestBurn, self)
       elif bestBurn is None:
          return Play(bestPlay, self)
-         
+
       expectedNumber = bestPlay.calculateExpectedNumber(self._game.allProgress(), simulation.initialPlayer())
       gainOfGoodPlay = self._game.calculateProgressValue(expectedNumber) - self._game.calculateProgressValue(expectedNumber - 1)
 
@@ -202,11 +209,6 @@ class Player():
 
       playUtility = (gainOfGoodPlay * highestPlayProbability) + (gainOfBadPlay * (1 - highestPlayProbability))
       burnUtility = (gainOfGoodBurn * highestBurnProbability) + (gainOfBadBurn * (1 - highestBurnProbability))
-
-      # print "--------"
-      # print str.format("Burn: Utility: {},  Card: {}, Prob: {}", burnUtility, bestBurn, highestBurnProbability)
-      # print str.format("Play: Utility: {},  Card: {}, Prob: {}", playUtility, bestPlay, highestPlayProbability)
-      # print "--------"
 
       # exit(0)
       if bestPlay != None and playUtility > burnUtility:

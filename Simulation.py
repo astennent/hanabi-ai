@@ -39,7 +39,7 @@ class Simulation:
          game.iteratePlayerIndex()
          score = game.simulateSingleTurn(self)
       else:
-         score = game.score()
+         score = game.score(self.initialPlayer)
 
       gameState.restoreGame()
       return score

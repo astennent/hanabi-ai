@@ -2,7 +2,7 @@ from Card import *
 
 class CardFact:
 
-   def __init__(self, card, possibilities):
+   def __init__(self, card, possibilities, owner):
       self._card = card
 
       # Hints can be given that don't necessarily make sense with the current board state.
@@ -11,8 +11,11 @@ class CardFact:
       self._shouldBurn = False
       self._shouldPlay = False
       self._possibilities = possibilities
+      self._receivedNumberHint = False
+      self._receivedSuitHint = False
+      self._owner = owner
 
-   def __str__(self):
+   def countSuitsAndNumbers(self, uninformedSimPlayer):
       possibleSuits = set([])
       possibleNumbers = set([])
       for suit in SUITS:
@@ -21,9 +24,21 @@ class CardFact:
                possibleSuits.add(suit)
                possibleNumbers.add(number)
 
+      if uninformedSimPlayer is not None and uninformedSimPlayer is not self._owner:
+         for cardFact in uninformedSimPlayer.hand():
+            card = cardFact.card()
+            suit = card.suit()
+            number = card.number()
+            if self._possibilities[suit][number] > 0: #ick duplicated code.
+               possibleSuits.add(suit)
+               possibleNumbers.add(number)
+
       suitCount = len(possibleSuits)
       numberCount = len(possibleNumbers)
+      return suitCount, numberCount
 
+   def __str__(self):
+      suitCount, numberCount = self.countSuitsAndNumbers(None)
       if suitCount == 1 and numberCount == 1:
          delimiter = "*"
       elif suitCount == 1:
@@ -34,6 +49,10 @@ class CardFact:
          delimiter = "-"
 
       return str.format("{}{}{}", delimiter, self._card, delimiter)
+
+   def isFullyRevealed(self, uninformedSimPlayer):
+      suitCount, numberCount = self.countSuitsAndNumbers(uninformedSimPlayer)
+      return (suitCount == 1 and numberCount == 1)
 
    def printPossibilities(self):
       for suit in SUITS:
@@ -74,6 +93,11 @@ class CardFact:
             if hintApplies is not hintMatchesCombo:
                self._possibilities[suit][number] = 0
 
+      if hint.isNumber():
+         self._receivedNumberHint = True
+      else:
+         self._receivedSuitHint = True
+
    def removePossibility(self, card):
       currentValue = self._possibilities[card.suit()][card.number()]
 
@@ -91,7 +115,7 @@ class CardFact:
       # makes the expected number for each card slightly higher (and less accurate), but the 
       # net effect of counting instead of guessing randomly is still positive.
       extraPossibilities = dict([]) 
-      if uninformedSimPlayer is not None:
+      if uninformedSimPlayer is not None and uninformedSimPlayer is not self._owner:
          for cardFact in uninformedSimPlayer.hand():
             key = cardFact.card().suit() + str(cardFact.card().number())
             if key in extraPossibilities:

@@ -1,0 +1,6 @@
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\bin\Debug\Hanabi.exe.config
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\bin\Debug\Hanabi.exe
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\bin\Debug\Hanabi.pdb
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\obj\Debug\Hanabi.csprojResolveAssemblyReference.cache
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\obj\Debug\Hanabi.exe
+C:\Users\atennent\Documents\GitHub\hanabi-ai\Hanabi\Hanabi\obj\Debug\Hanabi.pdb

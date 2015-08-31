@@ -32,6 +32,7 @@ class CardFactState():
       self.possibilities = deepcopy(cardFact._possibilities)
       self.shouldBurn = deepcopy(cardFact._shouldBurn)
       self.shouldPlay = deepcopy(cardFact._shouldPlay)
+      self.possibilityVersion = cardFact._possibilityVersion
 
    def restore(self):
       self._cardFact._possibilities = self.possibilities

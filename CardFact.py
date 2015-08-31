@@ -15,6 +15,9 @@ class CardFact:
       self._receivedSuitHint = False
       self._owner = owner
 
+      # Used for tracking state. If this is unchanged, we can avoid a deepcopy.
+      self._possibilityVersion = 0
+
    def countSuitsAndNumbers(self, uninformedSimPlayer):
       possibleSuits = set([])
       possibleNumbers = set([])
@@ -49,6 +52,10 @@ class CardFact:
          delimiter = "-"
 
       return str.format("{}{}{}", delimiter, self._card, delimiter)
+
+   def setPossibility(self, suit, number, value):
+      self._possibilityVersion += 1
+      self._possibilities[suit][number] = value
 
    def isFullyRevealed(self, uninformedSimPlayer):
       suitCount, numberCount = self.countSuitsAndNumbers(uninformedSimPlayer)
@@ -91,7 +98,7 @@ class CardFact:
          for number in NUMBERS:
             hintMatchesCombo = hint.appliesToNumberOrSuit(number, suit)
             if hintApplies is not hintMatchesCombo:
-               self._possibilities[suit][number] = 0
+               self.setPossibility(suit, number, 0)
 
       if hint.isNumber():
          self._receivedNumberHint = True
@@ -104,8 +111,7 @@ class CardFact:
       # It is common to receive an indirect hint that sets a possibility to 0 before you see the 
       # card that's causing this to be removed.
       if currentValue > 0:
-         self._possibilities[card.suit()][card.number()] -= 1
-
+         self.setPossibility(card.suit(), card.number(), self._possibilities[card.suit()][card.number()] - 1)
 
    def calculateExpectedNumber(self, progress, uninformedSimPlayer):
       expectedSum = 0

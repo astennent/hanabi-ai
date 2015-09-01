@@ -36,6 +36,7 @@ namespace Hanabi
       public void DropCard(Card card)
       {
          cards.Remove(card);
+         validHintCache.Clear();
          PushUndoable(delegate()
          {
             cards.Add(card);
@@ -48,7 +49,7 @@ namespace Hanabi
          return cards;
       }
 
-      public IEnumerable<Move> GetPossibleActions()
+      public IEnumerable<Move> GetPossibleActions(Player initialPlayer)
       {
          var actions = new List<Move>();
          
@@ -58,15 +59,11 @@ namespace Hanabi
             AddBurnToPossibleActions(actions);
 
          if (game.HintTokens > 0)
-            AddOtherPlayersHintsToActions(actions);
+            AddOtherPlayersHintsToActions(actions, initialPlayer);
 
          if (actions.Count == 0)
          {
             actions.Add(Yolo());
-         }
-         if (actions.First() == null)
-         {
-            Console.WriteLine("foo");
          }
          return actions;
       }
@@ -188,9 +185,9 @@ namespace Hanabi
          return knownRemainingCards;
       }
 
-      public void AddOtherPlayersHintsToActions(List<Move> actions)
+      public void AddOtherPlayersHintsToActions(List<Move> actions, Player initialPlayer)
       {
-         foreach (var player in game.Players.Where(player => player != this))
+         foreach (var player in game.Players.Where(player => player != this && player != initialPlayer))
          {
             player.AddHintsToPossibleActions(actions);
          }

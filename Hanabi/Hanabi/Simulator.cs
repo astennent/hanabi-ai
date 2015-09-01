@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
@@ -9,63 +11,64 @@ namespace Hanabi
 {
    public class Simulator
    {
-      private const int MaxDepth = 4;
+      private const int MaxDepth = 3;
+      public static int SimulationCount;
+      public static int AbortedSimCount;
 
       public static Tuple<int, Move> CalculateBestAction(Game game)
       {
-         // This is weird because it's prepared to be converted to Multithreading.
-         var bestScore = int.MinValue;
-         Move bestMove = null;
-
-         foreach (var action in game.GetCurrentPlayer().GetPossibleActions())
-         {
-            var simulation = new Simulation(game);
-            var score = simulation.Simulate(action, 0);
-            if (score > bestScore)
-            {
-               bestScore = score;
-               bestMove = action;
-            }
-         }
-
-         return new Tuple<int, Move>(bestScore, bestMove);
+         return new Simulation(game).Simulate(0);
       }
 
       class Simulation
       {
          private readonly Player initialPlayer;
          private readonly Game game;
+         private readonly int initialScore;
+         private const int MaxLossTolerance = 25;
 
          public Simulation(Game game)
          {
-            this.game = game;
+            this.game = game;//.Copy();
+            initialScore = game.GetScore();
             initialPlayer = game.GetCurrentPlayer();
          }
 
-         public int Simulate(Move move, int depth)
+         private int Simulate(Move move, int depth)
          {
+            SimulationCount++;
             var version = game.HandleMove(move);
+            var updatedScore = game.GetScore();
+            if (updatedScore < initialScore - MaxLossTolerance)
+            {
+               AbortedSimCount++;
+               game.RevertToVersion(version);
+               return -1;
+            }
+
             var score = (depth < MaxDepth)
-               ? Simulate(depth + 1) 
-               : game.GetScore();
+               ? Simulate(depth + 1).Item1
+               : updatedScore;
             game.RevertToVersion(version);
             return score;
          }
 
-         private int Simulate(int depth)
+         public Tuple<int, Move> Simulate(int depth)
          {
-            var bestScore = Int32.MinValue;
+            var bestScore = int.MinValue;
+            Move bestMove = null;
 
-            foreach (var action in game.GetCurrentPlayer().GetPossibleActions())
+            foreach (var action in game.GetCurrentPlayer().GetPossibleActions(initialPlayer))
             {
                var score = Simulate(action, depth);
                if (score > bestScore)
                {
                   bestScore = score;
+                  bestMove = action;
                }
             }
 
-            return bestScore;
+            return new Tuple<int, Move>(bestScore, bestMove);
          }
       }
    }

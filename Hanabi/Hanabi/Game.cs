@@ -14,7 +14,7 @@ namespace Hanabi
       public static int InitialHintTokens = 8;
       public static int InitialDeathTokens = 3;
 
-      readonly int[] hintTokenValues = { 20, 35, 45, 55, 65, 60, 60, 60, 60 };
+      readonly int[] hintTokenValues = { 15, 25, 38, 50, 50, 50, 50, 50, 50 };
       readonly int[] progressValues = { 0, 60, 110, 145, 170, 190 };
       readonly int[] deathTokenValues = { -1000, -200, -50, 0 };
 

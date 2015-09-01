@@ -5,7 +5,7 @@ import cProfile
 import pstats
 
 NumPlayers = 4
-SimulationDepth = 4
+SimulationDepth = 3
 
 def main():
    random.seed(6)

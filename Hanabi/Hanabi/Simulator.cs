@@ -25,7 +25,7 @@ namespace Hanabi
          private readonly Player initialPlayer;
          private readonly Game game;
          private readonly int initialScore;
-         private const int MaxLossTolerance = 25;
+         private const int MaxLossTolerance = 100;
 
          public Simulation(Game game)
          {

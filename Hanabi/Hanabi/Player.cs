@@ -14,12 +14,15 @@ namespace Hanabi
 
       private List<Hint> validHintCache;
 
+      public bool WillPlayAgain { get; set; }
+
       public Player(Game game, int id)
       {
          this.game = game;
          this.id = id;
          VersionSource = game;
          validHintCache = new List<Hint>();
+         WillPlayAgain = true;
       }
 
       public void ReceiveCard(Card card)
@@ -61,10 +64,10 @@ namespace Hanabi
          if (game.HintTokens > 0)
             AddOtherPlayersHintsToActions(actions, initialPlayer);
 
-         if (actions.Count == 0)
-         {
+         //if (actions.Count == 0)
+         //{
             actions.Add(Yolo());
-         }
+         //}
          return actions;
       }
 
@@ -187,7 +190,7 @@ namespace Hanabi
 
       public void AddOtherPlayersHintsToActions(List<Move> actions, Player initialPlayer)
       {
-         foreach (var player in game.Players.Where(player => player != this && player != initialPlayer))
+         foreach (var player in game.Players.Where(player => player != this && player != initialPlayer && player.WillPlayAgain))
          {
             player.AddHintsToPossibleActions(actions);
          }
@@ -221,10 +224,11 @@ namespace Hanabi
 
       public Move Yolo()
       {
+         var canBurn = game.HintTokens < Game.InitialHintTokens;
          var knownRemainingCards = KnownRemainingCards();
          const int goodGainValue = 30;
          var badGainValue = game.GetNextDeathTokenValue();
-         var goodBurnValue = game.GetNextHintTokenValue();
+         var goodBurnValue = canBurn ? game.GetNextHintTokenValue() : 0;
          const int badBurnValue = -10;
 
          var bestUtility = double.MinValue;
@@ -237,7 +241,7 @@ namespace Hanabi
             var safeBurnProbability = probabilities.Item2;
 
             var gainUtility = (goodGainValue * safeGainProbability) + (badGainValue * (1 - safeGainProbability));
-            var burnUtility = (goodBurnValue * safeBurnProbability) + (badBurnValue * (1 - safeGainProbability));
+            var burnUtility = canBurn ? (goodBurnValue * safeBurnProbability) + (badBurnValue * (1 - safeGainProbability)) : int.MinValue;
 
             if (gainUtility > bestUtility)
             {

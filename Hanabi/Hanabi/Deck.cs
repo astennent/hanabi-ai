@@ -10,7 +10,7 @@ namespace Hanabi
    public class Deck : Versioned
    {
       private readonly int[] cardCounts = {3, 2, 2, 2, 1};
-      private static readonly Random Rng = new Random(2);
+      private static readonly Random Rng = new Random(20);
 
       private readonly Card[] cards;
       private int currentCardIndex;
@@ -66,6 +66,16 @@ namespace Hanabi
       public int CountRemainingCards()
       {
          return cards.Length - currentCardIndex;
+      }
+
+      public void PrintCardsInOrder()
+      {
+         var output = "[\n";
+         for (var i = 0 ; i < cards.Length ; i++)
+         {
+            output += string.Format(" {0} {1}", cards[i], (i%7 == 6) ? "\n" : "");
+         }
+         Console.WriteLine(output + "]");
       }
 
    }

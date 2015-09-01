@@ -43,7 +43,7 @@ namespace Hanabi
 
       public override string ToString()
       {
-         return string.Format("<SuitHint:{0} for {1}>", Suit, TargetPlayer);
+         return string.Format("SuitHint:{0} for {1}", Suit, TargetPlayer);
       }
    }
 
@@ -66,7 +66,7 @@ namespace Hanabi
 
       public override string ToString()
       {
-         return string.Format("<Gain:{0}>", Card);
+         return string.Format("Gain:{0}", Card);
       }
    }
 
@@ -79,7 +79,7 @@ namespace Hanabi
 
       public override string ToString()
       {
-         return string.Format("<Burn:{0}>", Card);
+         return string.Format("Burn:{0}", Card);
       }
    }
 

@@ -67,7 +67,9 @@ namespace Hanabi
          for (var i = 0; i < Players.Count; i++)
          {
             if (DeathTokens == 0) break;
+            var currentPlayer = GetCurrentPlayer();
             PlayTurn();
+            currentPlayer.WillPlayAgain = false;
          }
       }
 
@@ -271,7 +273,7 @@ namespace Hanabi
          return currentVersion;
       }
 
-      private void PrintProgress()
+      public void PrintProgress()
       {
          var output = "{";
          foreach (var suit in Card.GetSuits())

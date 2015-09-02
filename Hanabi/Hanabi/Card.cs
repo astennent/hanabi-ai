@@ -77,8 +77,17 @@ namespace Hanabi
 
       public bool IsFullyRevealed()
       {
-         return disprovenNumbers.Count() == GetNumbers().Count() - 1 &&
-                disprovenSuits.Count() == GetSuits().Count() - 1;
+         return IsNumberRevealed() && IsSuitRevealed();
+      }
+
+      public bool IsNumberRevealed()
+      {
+         return disprovenNumbers.Count() == GetNumbers().Count() - 1;
+      }
+
+      public bool IsSuitRevealed()
+      {
+         return disprovenSuits.Count() == GetSuits().Count() - 1;
       }
 
       public bool ProcessHint(Hint hint)

@@ -58,16 +58,14 @@ namespace Hanabi
          
          AddGainToPossibleActions(actions);
 
-         if (game.HintTokens < Game.InitialHintTokens) 
+         if (game.CanBurn()) 
             AddBurnToPossibleActions(actions);
 
-         if (game.HintTokens > 0)
+         if (game.CanHint())
             AddOtherPlayersHintsToActions(actions, initialPlayer);
 
-         //if (actions.Count == 0)
-         //{
-            actions.Add(Yolo());
-         //}
+         actions.Add(Yolo());
+         
          return actions;
       }
 
@@ -224,7 +222,7 @@ namespace Hanabi
 
       public Move Yolo()
       {
-         var canBurn = game.HintTokens < Game.InitialHintTokens;
+         var canBurn = game.CanBurn();
          var knownRemainingCards = KnownRemainingCards();
          const int goodGainValue = 30;
          var badGainValue = game.GetNextDeathTokenValue();

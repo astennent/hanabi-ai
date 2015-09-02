@@ -26,8 +26,9 @@ namespace Hanabi
       public int DeathTokens { get; private set; }
 
       private int blockedSuitCount = 0;
-      private int partiallyBlockedSuitCount = 0;
       private int badBurnCount = 0;
+
+      public int TurnsRemaining { get; private set; }
 
       private int currentVersion;
       public Dictionary<Card.Suit, int> Progress { get; private set; }
@@ -38,6 +39,7 @@ namespace Hanabi
          Deck = new Deck(this);
          HintTokens = InitialHintTokens;
          DeathTokens = InitialDeathTokens;
+         TurnsRemaining = Deck.CountRemainingCards();
 
          Progress = new Dictionary<Card.Suit, int>();
          foreach (var suit in Card.GetSuits())
@@ -68,12 +70,15 @@ namespace Hanabi
             PlayTurn();
          }
 
+         TurnsRemaining = Players.Count;
+
          for (var i = 0; i < Players.Count; i++)
          {
             if (DeathTokens == 0) break;
             var currentPlayer = GetCurrentPlayer();
             PlayTurn();
             currentPlayer.WillPlayAgain = false;
+            TurnsRemaining--;
          }
       }
 
@@ -154,6 +159,28 @@ namespace Hanabi
          {
             DeathTokens++;
          });
+      }
+
+      public bool CanBurn()
+      {
+         bool atMaxHints = (HintTokens >= InitialHintTokens);
+         return !atMaxHints && !IsInEndgame();
+      }
+
+      public bool CanHint()
+      {
+         var hasHintTokens = (HintTokens > 0);
+         return hasHintTokens && !IsInEndgame();
+      }
+
+      public bool IsReadyForGain(Card card)
+      {
+         return Progress[card.GetSuit()] == card.GetNumber() - 1;
+      }
+
+      public bool HasProgressedPast(Card card)
+      {
+         return Progress[card.GetSuit()] >= card.GetNumber();
       }
 
       public void HandleBurn(Burn burn)
@@ -268,7 +295,7 @@ namespace Hanabi
          var score = 0;
          const int readyForGain = 6;
          const int notReadyForGain = -5;
-         const int readyForBurn = 5;
+         const int readyForBurn = 3;
          const int notReadyForBurn = -2;
          foreach (var card in Players.SelectMany(player => player.GetHand()))
          {
@@ -342,6 +369,11 @@ namespace Hanabi
       public int FinalScore()
       {
          return Progress.Values.Sum();
+      }
+
+      public bool IsInEndgame()
+      {
+         return TurnsRemaining <= Players.Count;
       }
    }
 }

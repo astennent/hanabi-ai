@@ -46,7 +46,7 @@ namespace Hanabi
                return -1;
             }
 
-            var score = (depth < MaxDepth)
+            var score = (depth < MaxDepth && game.TurnsRemaining > 0)
                ? Simulate(depth + 1).Item1
                : updatedScore;
             game.RevertToVersion(version);

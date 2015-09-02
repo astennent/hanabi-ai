@@ -25,6 +25,10 @@ namespace Hanabi
       public int HintTokens { get; private set; }
       public int DeathTokens { get; private set; }
 
+      private int blockedSuitCount = 0;
+      private int partiallyBlockedSuitCount = 0;
+      private int badBurnCount = 0;
+
       private int currentVersion;
       public Dictionary<Card.Suit, int> Progress { get; private set; }
 
@@ -159,6 +163,43 @@ namespace Hanabi
          {
             HintTokens--;
          });
+
+         CheckIfBurnBlocksSuit(burn);
+      }
+
+      public void CheckIfBurnBlocksSuit(Burn burn)
+      {
+         var suit = burn.Card.GetSuit();
+         var number = burn.Card.GetNumber();
+         var currentProgress = Progress[suit];
+         if (currentProgress >= number)
+         {
+            return;
+         }
+         
+         if (currentProgress == number - 1)
+         {
+            badBurnCount++;
+            PushUndoable(delegate()
+            {
+               badBurnCount--;
+            });
+         }
+
+         var unplayedCards = Deck.GetRemainingCards();
+         unplayedCards = Players.Aggregate(unplayedCards, (current, player) => current.Concat(player.GetHand()));
+
+         if (unplayedCards.Any(card => card.GetSuit() == suit && card.GetNumber() == number))
+         {
+            return;
+         }
+
+         blockedSuitCount++;
+         PushUndoable(delegate()
+         {
+            blockedSuitCount--;
+         });
+
       }
 
       public void HandleGain(Gain gain)
@@ -199,7 +240,12 @@ namespace Hanabi
 
       public int GetScore()
       {
-         return ScoreDeathTokens() + ScoreHintTokens() + ScoreProgress() + ScorePlayers();
+         return ScoreDeathTokens() + ScoreHintTokens() + ScoreProgress() + ScorePlayers() + ScoreBlockedSuits();;
+      }
+
+      private int ScoreBlockedSuits()
+      {
+         return -50*blockedSuitCount - 20*badBurnCount;
       }
 
       private int ScoreHintTokens()

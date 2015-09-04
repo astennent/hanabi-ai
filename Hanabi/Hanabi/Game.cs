@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Configuration;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -178,7 +179,7 @@ namespace Hanabi
          return Progress[card.GetSuit()] == card.GetNumber() - 1;
       }
 
-      public bool HasProgressedPast(Card card)
+      public bool IsReadyForBurn(Card card)
       {
          return Progress[card.GetSuit()] >= card.GetNumber();
       }
@@ -191,6 +192,7 @@ namespace Hanabi
             HintTokens--;
          });
 
+         CheckForBadBurn(burn);
          CheckIfBurnBlocksSuit(burn);
       }
 
@@ -199,23 +201,13 @@ namespace Hanabi
          var suit = burn.Card.GetSuit();
          var number = burn.Card.GetNumber();
          var currentProgress = Progress[suit];
-         if (currentProgress >= number)
+         if (IsReadyForBurn(burn.Card))
          {
             return;
          }
          
-         if (currentProgress == number - 1)
-         {
-            badBurnCount++;
-            PushUndoable(delegate()
-            {
-               badBurnCount--;
-            });
-         }
-
          var unplayedCards = Deck.GetRemainingCards();
          unplayedCards = Players.Aggregate(unplayedCards, (current, player) => current.Concat(player.GetHand()));
-
          if (unplayedCards.Any(card => card.GetSuit() == suit && card.GetNumber() == number))
          {
             return;
@@ -229,13 +221,20 @@ namespace Hanabi
 
       }
 
+      private void CheckForBadBurn(Burn burn)
+      {
+         if (IsReadyForGain(burn.Card))
+         {
+            badBurnCount++;
+            PushUndoable(delegate() { badBurnCount--; });
+         }
+      }
+
       public void HandleGain(Gain gain)
       {
-         var card = gain.Card;
-         var suit = card.GetSuit();
-         if (Progress[suit] == card.GetNumber() - 1)
+         if (IsReadyForGain(gain.Card))
          {
-            IncrementProgress(suit);
+            IncrementProgress(gain.Card.GetSuit());
          }
          else
          {
@@ -301,25 +300,11 @@ namespace Hanabi
          {
             if (card.ShouldGain)
             {
-               if (Progress[card.GetSuit()] == card.GetNumber() - 1)
-               {
-                  score += readyForGain;
-               }
-               else
-               {
-                  score += notReadyForGain;
-               }
+               score += IsReadyForGain(card) ? readyForGain : notReadyForGain; 
             }
             if (card.ShouldBurn)
             {
-               if (Progress[card.GetSuit()] >= card.GetNumber())
-               {
-                  score += readyForBurn;
-               }
-               else
-               {
-                  score += notReadyForBurn;
-               }
+               score += IsReadyForBurn(card) ? readyForBurn : notReadyForBurn;
             }
          }
          return score;

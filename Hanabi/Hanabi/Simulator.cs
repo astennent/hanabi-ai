@@ -34,6 +34,24 @@ namespace Hanabi
             initialPlayer = game.GetCurrentPlayer();
          }
 
+         public Tuple<int, Move> Simulate(int depth)
+         {
+            var bestScore = int.MinValue;
+            Move bestMove = null;
+
+            foreach (var action in game.GetCurrentPlayer().GetPossibleActions(initialPlayer))
+            {
+               var score = Simulate(action, depth);
+               if (score > bestScore)
+               {
+                  bestScore = score;
+                  bestMove = action;
+               }
+            }
+
+            return new Tuple<int, Move>(bestScore, bestMove);
+         }
+
          private int Simulate(Move move, int depth)
          {
             SimulationCount++;
@@ -53,23 +71,6 @@ namespace Hanabi
             return score;
          }
 
-         public Tuple<int, Move> Simulate(int depth)
-         {
-            var bestScore = int.MinValue;
-            Move bestMove = null;
-
-            foreach (var action in game.GetCurrentPlayer().GetPossibleActions(initialPlayer))
-            {
-               var score = Simulate(action, depth);
-               if (score > bestScore)
-               {
-                  bestScore = score;
-                  bestMove = action;
-               }
-            }
-
-            return new Tuple<int, Move>(bestScore, bestMove);
-         }
       }
    }
 

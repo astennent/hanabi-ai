@@ -174,11 +174,6 @@ namespace Hanabi
          var gainCount = 0.0;
          var burnCount = 0.0;
 
-         if (!nonDisprovenCards.Any())
-         {
-            Console.WriteLine("foo");
-         }
-
          foreach (var card in nonDisprovenCards)
          {
             var currentProgress = progress[card.GetSuit()];
